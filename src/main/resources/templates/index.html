@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>首页</title>
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}" href="/static/layui/css/layui.css">
+    <script type="text/javascript" th:src="@{/layui/jQuery.js}" src="/static/layui/jQuery.js"></script>
+    <script type="text/javascript" th:src="@{/layui/layui.js}" src="/static/layui/layui.js"></script>
+    <style>
+        body{
+            background: lightslategrey;
+        }
+        .div_img{
+            position: relative;
+            width: 270px;
+            height: 400px;
+            text-align: center;
+            display: inline-block;
+            margin-bottom: 15px;
+            border: 15px solid #666666;
+            background: whitesmoke;
+            opacity: 0.7;
+        }
+        .img{
+            max-width: 270px;
+            height: 168px;
+            cursor:pointer;
+        }
+
+        .img{
+            margin-bottom: -9px;
+        }
+
+        .div_img:hover{
+            box-shadow: 0 10px 5px black;
+            top: -10px;
+            opacity: 1;
+        }
+        .checkbox{
+            position: absolute;
+            right: -15px;
+            top: -15px;
+        }
+    </style>
+</head>
+<body style="width: 930px;margin: 0 auto;">
+<div class="layui-tab layui-tab-card">
+    <ul class="layui-tab-title">
+        <li class="layui-this">所有图片</li>
+    </ul>
+    <div class="layui-tab-content" style="height: auto;background: #ffffff">
+        <div class="layui-form" style="margin-bottom: 20px;margin-top: -10px;">
+            <button type="button" class="layui-btn" id="upload">
+                <i class="layui-icon">&#xe67c;</i>上传图片
+            </button>
+                <button class="layui-btn del">删除</button>
+                <input type="checkbox" lay-filter="all" title="全选">
+        </div>
+        <div class="layui-tab-item layui-show">
+            <div class="div_img" th:each="image:${images}">
+                <img class="img" th:src="@{'/images/'+${image.realName}}" onclick="javascript:window.open(this.src)" th:title="${image.name}" th:v="${image.realName}">
+                <input class="checkbox"  type="checkbox">
+                <table class="layui-table">
+                    <tr>
+                        <td>图片名称</td>
+                        <td><span th:text="${image.name}"></span></td>
+                    </tr>
+                    <tr>
+                        <td>来源地址</td>
+                        <td><span th:text="${image.ip}"></span></td>
+                    </tr>
+                    <tr>
+                        <td>上传时间</td>
+                        <td><span th:text="${image.time}"></span></td>
+                    </tr>
+                    <tr>
+                        <td>图片大小</td>
+                        <td><span th:text="${image.size}+'KB'"></span></td>
+                    </tr>
+                    <tr>
+                        <td>最大尺寸</td>
+                        <td><span th:text="2048KB"></span></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" th:title="${image.size}+'KB/2048KB'">
+                            <div class="layui-progress layui-progress-big" lay-showPercent="yes">
+                                <div class="layui-progress-bar layui-bg-green" th:lay-percent="${image.size*100/2048}+'%'"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    $(function () {
+        layui.use('element', function(){
+            var element = layui.element;
+        });
+        layui.use('form', function() {
+            var form = layui.form;
+            form.on('checkbox(all)', function(data){
+                names=[];
+                if( data.elem.checked==true){
+                    $(".checkbox").prop("checked",true)
+                    for (var i=0;i<$(".img").length;i++){
+                        names.push($($(".img")[i]).attr("v"));
+                    }
+                }else{
+                    $(".checkbox").prop("checked",false)
+                }
+            });
+        });
+        layui.use('upload', function(){
+            var upload = layui.upload;
+            var index;
+            var uploadInst = upload.render({
+                elem: '#upload' //绑定元素
+                ,url: '/upload/' //上传接口
+                ,size:2048
+                ,before: function(obj){ //obj参数包含的信息，跟 choose回调完全一致，可参见上文。
+                    index=layer.load(1); //上传loading
+                    $("#upload").css("display","none")
+                }
+                ,done: function(res){
+                    console.log(res)
+                    if (res===1) {
+                        layer.close(index);
+                        layer.msg("上传成功")
+                        setTimeout(function () {
+                            window.location.href = "";
+                        }, 1000)
+                    }
+                }
+                ,error: function(){
+                    layer.close(index);
+                }
+            });
+        });
+
+
+        var names=[];
+        $(".checkbox").change(function () {
+            if($(this).prop("checked")==true){
+                names.push($(this).prev().attr("v"));
+            }else{
+                names.splice(names.indexOf($(this).prev().attr("v")),1);
+            }
+        })
+        $(".del").click(function () {
+            if(names.length==0){
+                layer.alert("请选择要删除的图片");
+            }else{
+                layer.confirm('确认要删除选择的'+names.length+"张图片?", {icon: 3, title:'提示'}, function(index){
+                    $.ajax({
+                        url:"/delete",
+                        data:{
+                            names:names
+                        },
+                        success:function (resp) {
+                            if (resp==="1"){
+                                layer.msg("刪除成功")
+                                setTimeout(function () {
+                                    window.location.href="";
+                                },1000)
+                            }
+                        }
+                    })
+                    layer.close(index);
+                });
+            }
+        })
+    })
+</script>
+</html>
